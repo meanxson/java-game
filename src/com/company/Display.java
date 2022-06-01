@@ -1,5 +1,7 @@
 package com.company;
 
+import graphics.Render;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -9,6 +11,11 @@ public class Display extends Canvas implements Runnable {
 
     private Thread thread;
     private boolean isRunning;
+    private Render render;
+
+    public Display(){
+        render = new Render(WIDTH, HEIGHT);
+    }
 
     //todo: make in other class
     private void start() {
