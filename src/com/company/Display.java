@@ -1,9 +1,13 @@
 package com.company;
 
 import graphics.Render;
+import graphics.Screen;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferStrategy;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 
 public class Display extends Canvas implements Runnable {
     public static final int WIDTH = 800;
@@ -12,9 +16,15 @@ public class Display extends Canvas implements Runnable {
     private Thread thread;
     private boolean isRunning;
     private Render render;
+    private Screen screen;
+    private BufferedImage image;
+    private int[] pixels;
+
 
     public Display(){
-        render = new Render(WIDTH, HEIGHT);
+        screen = new Screen(WIDTH, HEIGHT);
+        image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+        pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
     }
 
     //todo: make in other class
@@ -44,7 +54,33 @@ public class Display extends Canvas implements Runnable {
     @Override
     public void run() {
         while (isRunning) {
+            tick();
+            render();
         }
+    }
+
+    private void tick(){
+
+    }
+
+    private void render(){
+        BufferStrategy bs = getBufferStrategy();
+
+        if (bs == null){
+            createBufferStrategy(3);
+            return;
+        }
+
+        screen.render();
+
+        for (int i = 0; i < WIDTH * HEIGHT; i++) {
+            pixels[i] = screen.pixels[i];
+        }
+
+        Graphics graphics = bs.getDrawGraphics();
+        graphics.drawImage(image,0,0,WIDTH,HEIGHT, null);
+        graphics.dispose();
+        bs.show();
     }
 
     public static void main(String[] args) {
