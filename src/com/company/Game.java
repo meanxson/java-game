@@ -2,11 +2,11 @@ package com.company;
 
 import graphics.Render;
 
-public abstract class Game {
-    private final Render render;
+public class Game {
+    public int time;
 
-    public Game(Render render) {
-        this.render = render;
+    public void tick(){
+        time+=4;
     }
 
 }
