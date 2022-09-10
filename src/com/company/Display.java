@@ -1,9 +1,9 @@
 package com.company;
 
+import com.company.ticklers.Tickle;
 import graphics.Render;
 import graphics.Screen;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
@@ -15,15 +15,12 @@ public class Display extends Canvas implements Runnable {
     public static final int WIDTH = 1280;
     public static final int HEIGHT = 720;
     public static final String TITLE = "Java Game PRE-ALPHA 0.01";
-
-    private Thread thread;
     private boolean isRunning;
     private Render render;
-    private Screen screen;
-    private BufferedImage image;
-    private int[] pixels;
-    private Game game;
-
+    private final Screen screen;
+    private final BufferedImage image;
+    private final int[] pixels;
+    private final Tickle tickle;
 
     public Display(){
         Dimension size = new Dimension(WIDTH, HEIGHT);
@@ -34,31 +31,32 @@ public class Display extends Canvas implements Runnable {
         screen = new Screen(WIDTH, HEIGHT);
         image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
         pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
-        game = new Game();
+
+        tickle = new Tickle() {
+            int time = 0;
+            @Override
+            public void tick() {
+                time += 4;
+            }
+
+            @Override
+            public int getTick() {
+                return time;
+            }
+        };
     }
 
-    //todo: make in other class
-    private void start() {
-        if (isRunning)
-            return;
+    public Display(Tickle tickle){
+        Dimension size = new Dimension(WIDTH, HEIGHT);
+        setPreferredSize(size);
+        setMinimumSize(size);
+        setMaximumSize(size);
 
-        isRunning = true;
-        thread = new Thread(this);
-        thread.start();
+        screen = new Screen(WIDTH, HEIGHT);
+        image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+        pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
 
-    }
-
-    private void stop() {
-        if (!isRunning)
-            return;
-        isRunning = false;
-
-        try {
-            thread.join();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(0);
-        }
+        this.tickle = tickle;
     }
 
     @Override
@@ -77,7 +75,7 @@ public class Display extends Canvas implements Runnable {
             unprocessedSeconds += passedTime / 1000000000.0;
 
             while (unprocessedSeconds > secondPerTick){
-                tick();
+                tickle.tick();
                 unprocessedSeconds -= secondPerTick;
                 ticked = true;
                 tickCount++;
@@ -98,23 +96,16 @@ public class Display extends Canvas implements Runnable {
         }
     }
 
-    private void tick(){
-        game.tick();
-    }
-
     private void render(){
         BufferStrategy bs = getBufferStrategy();
 
-        if (bs == null){
+        if (bs == null) {
             createBufferStrategy(3);
             return;
         }
+        screen.render(tickle);
 
-        screen.render(game);
-
-        for (int i = 0; i < WIDTH * HEIGHT; i++) {
-            pixels[i] = screen.pixels[i];
-        }
+        System.arraycopy(screen.pixels, 0, pixels, 0, WIDTH * HEIGHT);
 
         Graphics graphics = bs.getDrawGraphics();
         graphics.drawImage(image,0,0,WIDTH,HEIGHT, null);
@@ -122,20 +113,11 @@ public class Display extends Canvas implements Runnable {
         bs.show();
     }
 
-    public static void main(String[] args) {
-        Display game = new Display();
-        JFrame frame = new JFrame();
-        frame.add(game);
-        frame.pack();
-        frame.setTitle(TITLE);
-
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLocationRelativeTo(null);
-        frame.setResizable(false);
-        frame.setVisible(true);
-
-        game.start();
+    public boolean isRunning() {
+        return isRunning;
     }
 
-
+    public void setRunning(boolean running) {
+        isRunning = running;
+    }
 }
